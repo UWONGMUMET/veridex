@@ -1,0 +1,71 @@
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - type: bind
+        source: ./infra/postgres/001-init.sql
+        target: /docker-entrypoint-initdb.d/001-init.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  
+  backend:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: "${NODE_ENV}"
+      HOST: "${BACKEND_HOST}"
+      PORT: "${BACKEND_PORT}"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
+      AI_SERVICE_URL: "http://ai:${AI_PORT}"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      database:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    command:
+      - sh
+      - -c
+      - bun run db:migrate && bun run dev
+  
+  ai:
+    build:
+      context: ./ai
+    environment:
+      ENVIRONMENT: "${ENVIRONMENT}"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
+    ports:
+      - "${AI_PORT}:${AI_PORT}"
+    depends_on:
+      database:
+        condition: service_healthy
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - "${AI_HOST}"
+      - --port
+      - "${AI_PORT}"
+      - --reload
+
+volumes:
+  postgres_data:
+
