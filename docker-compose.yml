@@ -9,12 +9,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - type: bind
-        source: ./infra/postgres/001-init.sql
-        target: /docker-entrypoint-initdb.d/001-init.sql
-        read_only: true
-        bind:
-          create_host_path: false
+      - ./infra/postgres/001-init.sql:/docker-entrypoint-initdb.d/001-init.sql
     healthcheck:
       test:
         [
@@ -24,36 +19,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-  
-  backend:
-    build:
-      context: ./backend
-    environment:
-      NODE_ENV: "${NODE_ENV}"
-      HOST: "${BACKEND_HOST}"
-      PORT: "${BACKEND_PORT}"
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
-      AI_SERVICE_URL: "http://ai:${AI_PORT}"
-    ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
-    depends_on:
-      database:
-        condition: service_healthy
-      ai:
-        condition: service_started
-    command:
-      - sh
-      - -c
-      - bun run db:migrate && bun run dev
-  
+
   ai:
     build:
       context: ./ai
     environment:
       ENVIRONMENT: "${ENVIRONMENT}"
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
+      STORAGE_ROOT: "${STORAGE_ROOT}"
     ports:
       - "${AI_PORT}:${AI_PORT}"
+    volumes:
+      - ./storage:${STORAGE_ROOT}
     depends_on:
       database:
         condition: service_healthy
@@ -66,6 +43,30 @@ services:
       - "${AI_PORT}"
       - --reload
 
+  backend:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: "${NODE_ENV}"
+      HOST: "${BACKEND_HOST}"
+      PORT: "${BACKEND_PORT}"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
+      AI_SERVICE_URL: "http://ai:${AI_PORT}"
+      STORAGE_ROOT: "${STORAGE_ROOT}"
+      MAX_FILE_SIZE_BYTES: "${MAX_FILE_SIZE_BYTES}"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    volumes:
+      - ./storage:${STORAGE_ROOT}
+    depends_on:
+      database:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    command:
+      - sh
+      - -c
+      - bun run db:migrate && bun run dev
+
 volumes:
   postgres_data:
-
