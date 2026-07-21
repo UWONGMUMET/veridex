@@ -65,5 +65,37 @@ export const researchProjects = pgTable(
     }
 );
 
+export const documents = pgTable(
+    "documents",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        researchProjectId: uuid("research_project_id").notNull().references(() => researchProjects.id, {
+            onDelete: "cascade",
+        }),
+        name: varchar("name", { length: 255 }).notNull(),
+        sourceType: documentSourceTypeEnum("source_type").notNull(),
+        sourceUrl: text("source_url"),
+        storageKey: text("storage_key"),
+        parsedStorageKey: text("parsed_storage_key"),
+        mimeType: varchar("mime_type", { length: 100 }),
+        fileSize: integer("file_size"),
+        pageCount: integer("page_count"),
+        characterCount: integer("character_count"),
+        status: documentStatusEnum("status").default("pending").notNull(),
+        errorMessage: text("error_message"),
+        createdAt: timestamp("created_at", { withTimezone:true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone:true }).defaultNow().notNull()
+    }, (table) => [
+        index(
+            "documents_project_id_idx",
+        ).on(
+            table.researchProjectId
+        )
+    ]
+)
+
 export type ResearchProject = typeof researchProjects.$inferSelect;
 export type NewResearchProject = typeof researchProjects.$inferInsert;
+
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
