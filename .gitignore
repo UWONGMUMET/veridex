@@ -31,6 +31,14 @@ logs/
 tmp/
 temp/
 
+# Local runtime data
+/storage/
+/backend/storage/
+/backend/uploads/
+*.db
+*.sqlite
+*.sqlite3
+
 # Editors and operating systems
 .vscode/
 .idea/
