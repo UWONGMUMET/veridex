@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.config import ENVIRONMENT
+from app.configs.config import ENVIRONMENT
 
 app = FastAPI(
     title="Veridex AI",
