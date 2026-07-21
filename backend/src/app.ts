@@ -3,6 +3,7 @@ import { Hono } from "hono";
 
 import { env } from "./config/env";
 import { database } from "./database/client";
+import { documentRoutes } from "./modules/documents/document.route";
 import { researchProjectRoutes } from "./modules/research-projects/research-project.route";
 import { AppError } from "./utils/app-error";
 
@@ -77,3 +78,4 @@ app.get("/health/ai", async (context) => {
 });
 
 app.route("/api/research-projects", researchProjectRoutes);
+app.route("/api", documentRoutes);
