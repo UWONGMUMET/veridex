@@ -1,4 +1,4 @@
-export type AppErrorStatus = | 400 | 404 | 409 | 422 | 500;
+export type AppErrorStatus = | 400 | 404 | 409 | 422 | 500 | 502;
 
 export class AppError extends Error {
     readonly statusCode: AppErrorStatus;
