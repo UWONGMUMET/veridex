@@ -1,12 +1,14 @@
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-def required_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value or not value.strip():
-        raise RuntimeError(
-            f"Missing required environment variable: {name}"
-        )
-    return value.strip()
+class Settings(BaseSettings):
+    environment: str = "development"
+    database_url: str
+    storage_root: str = "./storage"
 
-ENVIRONMENT = os.getenv("ENVIRONMENT")
-DATABASE_URL = required_env("DATABASE_URL")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+settings = Settings()
