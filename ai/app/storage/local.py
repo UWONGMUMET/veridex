@@ -17,6 +17,10 @@ def read_bytes(key: str) -> bytes:
     file_path = resolve_storage_key(key)
     return file_path.read_bytes()
 
+def read_text(key: str) -> str:
+    file_path = resolve_storage_key(key)
+    return file_path.read_text(encoding="utf-8")
+
 def write_text(key: str, content: str) -> None:
     file_path = resolve_storage_key(key)
     file_path.parent.mkdir(

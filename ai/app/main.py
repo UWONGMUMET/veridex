@@ -1,5 +1,8 @@
 from fastapi import FastAPI
+
 from app.api.documents import router as document_router
+from app.api.indexing import router as indexing_router
+from app.api.search import router as search_router
 from app.configs.config import settings
 
 app = FastAPI(
@@ -8,11 +11,13 @@ app = FastAPI(
 )
 
 app.include_router(document_router)
+app.include_router(indexing_router)
+app.include_router(search_router)
 
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "veridex-ai",
-        "environment": settings.environment,
+        "environment": settings.node_env,
     }
