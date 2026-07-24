@@ -5,6 +5,7 @@ const server = Bun.serve({
     hostname: env.host,
     port: env.port,
     fetch: app.fetch,
+    idleTimeout: 255,
 });
 
 console.log(

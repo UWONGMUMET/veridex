@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { env } from "./config/env";
 import { database } from "./database/client";
 import { documentRoutes } from "./modules/documents/document.route";
+import { indexingRoutes } from "./modules/indexing/indexing.route";
 import { researchProjectRoutes } from "./modules/research-projects/research-project.route";
+import { searchRoutes } from "./modules/search/search.route";
 import { AppError } from "./utils/app-error";
 
 export const app = new Hono();
@@ -34,7 +36,7 @@ app.notFound((context) => {
             code: "NOT_FOUND",
             message: "Route not found",
         }
-    }, 400)
+    }, 404)
 });
 
 app.get("/health", async (context) => {
@@ -79,3 +81,5 @@ app.get("/health/ai", async (context) => {
 
 app.route("/api/research-projects", researchProjectRoutes);
 app.route("/api", documentRoutes);
+app.route("/api", indexingRoutes);
+app.route("/api", searchRoutes);
