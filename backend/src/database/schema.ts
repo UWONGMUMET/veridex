@@ -81,6 +81,8 @@ export const documents = pgTable(
         fileSize: integer("file_size"),
         pageCount: integer("page_count"),
         characterCount: integer("character_count"),
+        chunkCount: integer("chunk_count").default(0).notNull(),
+        indexedAt: timestamp("indexed_at", { withTimezone:true }),
         status: documentStatusEnum("status").default("pending").notNull(),
         errorMessage: text("error_message"),
         createdAt: timestamp("created_at", { withTimezone:true }).defaultNow().notNull(),
@@ -92,7 +94,29 @@ export const documents = pgTable(
             table.researchProjectId
         )
     ]
-)
+);
+
+export const documentChunks = pgTable(
+    "document_chunks",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        documentId: uuid("document_id").notNull().references(() => documents.id, {
+            onDelete: "cascade"
+        }),
+        position: integer("position").notNull(),
+        content: text("content").notNull(),
+        tokenCount: integer("token_count").notNull(),
+        embedding: vector("embedding", {
+            dimensions: 384
+        }),
+        metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    }, (table) => [
+        index("document_chunks_document_id_idx").on(
+            table.documentId
+        )
+    ]
+);
 
 export type ResearchProject = typeof researchProjects.$inferSelect;
 export type NewResearchProject = typeof researchProjects.$inferInsert;
