@@ -9,7 +9,10 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres/001-init.sql:/docker-entrypoint-initdb.d/001-init.sql
+      - type: bind
+        source: ./infra/postgres/001-init.sql
+        target: /docker-entrypoint-initdb.d/001-init.sql
+        read_only: true
     healthcheck:
       test:
         [
@@ -24,16 +27,35 @@ services:
     build:
       context: ./ai
     environment:
-      ENVIRONMENT: "${ENVIRONMENT}"
+      NODE_ENV: "${NODE_ENV}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
-      STORAGE_ROOT: "${STORAGE_ROOT}"
+      STORAGE_ROOT: "/storage"
+      EMBEDDING_MODEL: "${EMBEDDING_MODEL}"
+      EMBEDDING_DIMENSIONS: "${EMBEDDING_DIMENSIONS}"
+      CHUNK_SIZE: "${CHUNK_SIZE}"
+      CHUNK_OVERLAP: "${CHUNK_OVERLAP}"
+      HF_HOME: "/models/huggingface"
     ports:
       - "${AI_PORT}:${AI_PORT}"
     volumes:
-      - ./storage:${STORAGE_ROOT}
+      - ./ai/app:/app/app
+      - ./storage:/storage
+      - model_cache:/models
     depends_on:
       database:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${AI_PORT}/health')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     command:
       - uvicorn
       - app.main:app
@@ -48,21 +70,23 @@ services:
       context: ./backend
     environment:
       NODE_ENV: "${NODE_ENV}"
-      HOST: "${BACKEND_HOST}"
-      PORT: "${BACKEND_PORT}"
+      BACKEND_HOST: "${BACKEND_HOST}"
+      BACKEND_PORT: "${BACKEND_PORT}"
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}"
       AI_SERVICE_URL: "http://ai:${AI_PORT}"
-      STORAGE_ROOT: "${STORAGE_ROOT}"
+      STORAGE_ROOT: "/storage"
       MAX_FILE_SIZE_BYTES: "${MAX_FILE_SIZE_BYTES}"
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
-      - ./storage:${STORAGE_ROOT}
+      - ./backend/src:/app/src
+      - ./backend/drizzle:/app/drizzle
+      - ./storage:/storage
     depends_on:
       database:
         condition: service_healthy
       ai:
-        condition: service_started
+        condition: service_healthy
     command:
       - sh
       - -c
@@ -70,3 +94,4 @@ services:
 
 volumes:
   postgres_data:
+  model_cache:

@@ -2,17 +2,20 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PIP_DEFAULT_TIMEOUT=1000
+ENV PIP_RETRIES=20
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install \
-    --no-cache-dir \
-    --upgrade pip \
-    && pip install \
-    --no-cache-dir \
-    -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade pip \
+    && python -m pip install \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch \
+    && python -m pip install \
+        -r requirements.txt
 
 COPY app ./app
 

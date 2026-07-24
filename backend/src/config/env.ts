@@ -20,8 +20,8 @@ const requiredNumberEnv = (name: string): number => {
 
 export const env = {
     nodeEnv: requiredEnv("NODE_ENV"),
-    host: requiredEnv("HOST"),
-    port: Number(requiredEnv("PORT")),
+    host: requiredEnv("BACKEND_HOST"),
+    port: Number(requiredEnv("BACKEND_PORT")),
     databaseUrl: requiredEnv("DATABASE_URL"),
     aiServiceUrl: requiredEnv("AI_SERVICE_URL"),
     storageRoot: requiredEnv("STORAGE_ROOT"),
